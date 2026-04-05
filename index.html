@@ -1,0 +1,449 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  ShieldCheck, 
+  Video, 
+  Lock, 
+  MessageCircle, 
+  Crown, 
+  Star, 
+  CheckCircle2, 
+  ChevronRight,
+  Send,
+  Bot,
+  Zap,
+  Heart,
+  Camera,
+  Users,
+  Smartphone,
+  ShieldAlert,
+  MessageSquare,
+  Sparkles
+} from 'lucide-react';
+
+// --- Configurações ---
+const WHATSAPP_NUMBER = "5511954672380"; 
+const COLORS = {
+  roseGold: 'from-[#e0b0ff] via-[#ffc0cb] to-[#b76e79]', // Rose Gold Silk
+  feminineDark: 'bg-[#0a0608]', // Deep Burgundy/Black
+  glass: 'backdrop-blur-2xl bg-white/5 border border-white/10',
+  accent: 'text-[#ffc0cb]',
+};
+
+const App = () => {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { role: 'bot', text: 'Olá, sou sua Concierge VIP. Como posso ajudar-te a aceder às nossas salas privadas de videochamada e chat hoje?' }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const chatEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // --- Lógica da API Gemini ---
+  const callGemini = async (userQuery) => {
+    const apiKey = ""; 
+    const systemPrompt = `És a Concierge do "APP de Chamada de Video e Chat VIP". 
+    O teu tom é doce, sofisticado, protetor e extremamente profissional. 
+    O teu objetivo é converter o interesse do cliente em contratação imediata via WhatsApp (11 95467-2380). 
+    Enfatiza que o serviço é focado em conversas íntimas e videochamadas de alta qualidade com total discrição. 
+    Responde em Português de Portugal com elegância.`;
+
+    const payload = {
+      contents: [{ parts: [{ text: userQuery }] }],
+      systemInstruction: { parts: [{ text: systemPrompt }] }
+    };
+
+    let delay = 1000;
+    for (let i = 0; i < 5; i++) {
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error('Retry');
+        const result = await response.json();
+        return result.candidates?.[0]?.content?.parts?.[0]?.text;
+      } catch (e) {
+        await new Promise(res => setTimeout(res, delay));
+        delay *= 2;
+      }
+    }
+    return "Lamento, a nossa linha segura está temporariamente congestionada. Por favor, clica no botão do WhatsApp para atendimento imediato.";
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
+    const userText = inputValue;
+    setMessages(prev => [...prev, { role: 'user', text: userText }]);
+    setInputValue('');
+    setIsTyping(true);
+    const botResponse = await callGemini(userText);
+    setIsTyping(false);
+    setMessages(prev => [...prev, { role: 'bot', text: botResponse }]);
+  };
+
+  const handleWhatsAppRedirect = () => {
+    const message = encodeURIComponent("Olá! Gostaria de contratar agora o acesso ao APP de Chamada de Vídeo e Chat VIP.");
+    window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+  };
+
+  return (
+    <div className={`min-h-screen ${COLORS.feminineDark} text-rose-50 font-sans selection:bg-pink-500/30 overflow-x-hidden`}>
+      
+      {/* --- Navegação --- */}
+      <nav className="fixed top-0 w-full z-[100] bg-black/40 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg bg-gradient-to-br ${COLORS.roseGold}`}>
+              <Heart className="text-black w-5 h-5 fill-black" />
+            </div>
+            <div>
+              <span className="text-xl font-black tracking-tighter uppercase block leading-none">VideoVIP</span>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-pink-300 font-bold">Privado & Intimo</span>
+            </div>
+          </div>
+          
+          <div className="hidden lg:flex gap-8 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+            <a href="#como-funciona" className="hover:text-pink-300 transition-colors">Como Funciona</a>
+            <a href="#video-chat" className="hover:text-pink-300 transition-colors">O App</a>
+            <a href="#seguranca" className="hover:text-pink-300 transition-colors">Privacidade</a>
+          </div>
+
+          <button 
+            onClick={handleWhatsAppRedirect}
+            className={`px-6 py-2.5 rounded-full text-[10px] font-black bg-gradient-to-r ${COLORS.roseGold} text-black hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,192,203,0.3)]`}
+          >
+            CONTRATAR VIA WHATSAPP
+          </button>
+        </div>
+      </nav>
+
+      {/* --- Bar de Contratação Urgente (Topo) --- */}
+      <div className="pt-20">
+        <div className="bg-gradient-to-r from-pink-600 to-rose-400 py-3 text-center">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-white flex items-center justify-center gap-2">
+            <Sparkles className="w-4 h-4 animate-spin-slow" />
+            Vagas VIP Limitadas para Hoje • Contratação via 11 95467-2380
+            <Sparkles className="w-4 h-4" />
+          </p>
+        </div>
+      </div>
+
+      {/* --- Seção Hero --- */}
+      <section className="relative min-h-[90vh] flex items-center px-6">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0608] via-[#0a0608]/80 to-transparent z-10" />
+          <img 
+            src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=1920" 
+            alt="Woman with Smartphone" 
+            className="w-full h-full object-cover opacity-60 grayscale-[20%]"
+          />
+        </div>
+
+        <div className="relative z-20 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
+          <div className="text-left animate-in fade-in slide-in-from-left-10 duration-1000">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 mb-8">
+              <Video className="w-3 h-3 text-pink-300" />
+              <span className="text-[10px] font-bold tracking-widest uppercase text-pink-200">Experiência Real de Vídeo e Chat</span>
+            </div>
+            
+            <h1 className="text-6xl md:text-8xl font-serif italic mb-6 leading-tight">
+              A elegância do <br />
+              <span className={`bg-gradient-to-r ${COLORS.roseGold} bg-clip-text text-transparent font-sans not-italic font-black`}>Video-Chat VIP</span>
+            </h1>
+            
+            <p className="text-lg text-zinc-400 max-w-lg mb-10 leading-relaxed font-light">
+              Desfruta de videochamadas privadas e conversas íntimas com a máxima sofisticação. 
+              Um ambiente seguro, discreto e focado em conexões de elite através do teu telemóvel.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-5">
+              <button 
+                onClick={handleWhatsAppRedirect}
+                className="group relative px-10 py-5 rounded-2xl bg-white text-black font-black text-lg overflow-hidden transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]"
+              >
+                CONTRATAR ACESSO AGORA
+              </button>
+              <button 
+                onClick={() => setIsChatOpen(true)}
+                className="px-10 py-5 rounded-2xl bg-zinc-900/50 border border-white/10 text-white font-bold text-lg hover:bg-zinc-800 transition-all backdrop-blur-md flex items-center gap-2"
+              >
+                <Bot className="w-5 h-5 text-pink-300" />
+                FALAR COM A CONCIERGE
+              </button>
+            </div>
+          </div>
+
+          <div className="hidden lg:flex justify-center relative">
+            <div className="w-[350px] aspect-[9/19] rounded-[3.5rem] border-[10px] border-zinc-900 shadow-2xl overflow-hidden relative bg-black">
+              <img 
+                src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=800" 
+                className="w-full h-full object-cover opacity-80" 
+                alt="App Interface"
+              />
+              <div className="absolute inset-0 p-8 flex flex-col justify-between bg-gradient-to-t from-black/80 via-transparent to-black/20">
+                <div className="flex justify-between items-start">
+                   <div className="px-3 py-1 rounded-full bg-pink-600 text-[10px] font-black uppercase animate-pulse">Live Video</div>
+                   <Smartphone className="w-5 h-5 text-white/50" />
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10">
+                    <MessageSquare className="w-4 h-4 text-pink-300" />
+                    <p className="text-[10px] font-medium italic">"Olá, estás online para uma chamada privada?"</p>
+                  </div>
+                  <div className="flex gap-4 justify-center">
+                    <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-lg"><Video className="text-black" /></div>
+                    <div className="w-14 h-14 rounded-full bg-pink-500 flex items-center justify-center shadow-lg shadow-pink-500/40"><MessageCircle className="text-white" /></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Soft Glow */}
+            <div className="absolute inset-0 bg-pink-500/10 blur-[100px] rounded-full -z-10" />
+          </div>
+        </div>
+      </section>
+
+      {/* --- Como Funciona (Rápido e Direto) --- */}
+      <section id="como-funciona" className="py-24 px-6 border-y border-white/5 bg-zinc-900/10">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12">
+          {[
+            { icon: <Crown />, step: "01", title: "Escolha o Nível", desc: "Aceda via WhatsApp e escolha o seu nível de acesso VIP." },
+            { icon: <Smartphone />, step: "02", title: "Acesso Imediato", desc: "Receba os seus dados de acesso encriptados em poucos minutos." },
+            { icon: <Video />, step: "03", title: "Conecte-se", desc: "Inicie chamadas de vídeo e chat privado com total discrição." }
+          ].map((item, i) => (
+            <div key={i} className="text-center group">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-pink-300 group-hover:scale-110 transition-transform">
+                {item.icon}
+              </div>
+              <span className="text-[10px] font-black text-pink-400 tracking-widest">{item.step}</span>
+              <h3 className="text-xl font-bold mt-2 mb-4">{item.title}</h3>
+              <p className="text-zinc-500 text-sm">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* --- O App de Videochamada (Explícito) --- */}
+      <section id="video-chat" className="py-32 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-20 items-center">
+           <div className="flex-1 order-2 lg:order-1">
+              <div className="grid grid-cols-2 gap-4">
+                 <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&q=80&w=600" className="rounded-3xl h-64 w-full object-cover grayscale-[30%] border border-white/10" alt="Lifestyle" />
+                 <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=600" className="rounded-3xl h-64 w-full object-cover mt-8 border border-white/10" alt="Video Call Profile" />
+              </div>
+           </div>
+           <div className="flex-1 order-1 lg:order-2 space-y-8">
+              <h2 className="text-5xl font-black leading-tight">
+                Conversas Reais. <br />
+                <span className={`bg-gradient-to-r ${COLORS.roseGold} bg-clip-text text-transparent`}>Vídeo HD Sem Limites.</span>
+              </h2>
+              <p className="text-zinc-400 text-lg leading-relaxed">
+                Desenvolvemos o App VideoVIP para ser a plataforma definitiva de chat e vídeo íntimo. 
+                Esqueça os apps genéricos: aqui, a qualidade da imagem e o anonimato dos intervenientes são a nossa prioridade número um.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Filtros de Beleza e Iluminação Inteligente",
+                  "Chat Encriptado com Mensagens Autodestrutivas",
+                  "Tecnologia Anti-Screenshot (Proteção de Ecrã)",
+                  "Sem Necessidade de Vincular Redes Sociais"
+                ].map((text, i) => (
+                  <li key={i} className="flex items-center gap-3 font-bold text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-pink-400" /> {text}
+                  </li>
+                ))}
+              </ul>
+              <button 
+                onClick={handleWhatsAppRedirect}
+                className="w-full py-5 rounded-2xl bg-zinc-100 text-black font-black flex items-center justify-center gap-3 hover:bg-pink-100 transition-all"
+              >
+                QUERO O MEU ACESSO APP VIP
+              </button>
+           </div>
+        </div>
+      </section>
+
+      {/* --- Segurança Rosa / Black --- */}
+      <section id="seguranca" className="py-32 bg-zinc-900/30">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          <div className="inline-block p-4 rounded-full bg-pink-500/10 mb-8">
+            <Lock className="w-10 h-10 text-pink-400" />
+          </div>
+          <h2 className="text-4xl md:text-6xl font-black mb-10">Discrição é o nosso <br /> Primeiro Nome.</h2>
+          <div className="grid md:grid-cols-2 gap-8 text-left">
+             <div className={`p-8 rounded-[2rem] ${COLORS.glass}`}>
+                <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <ShieldCheck className="text-pink-300" /> Anonimato Total
+                </h4>
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  Não solicitamos e-mail, telefone pessoal ou documentos. O seu acesso é gerado por uma chave encriptada única, 
+                  garantindo que a sua identidade permaneça apenas sua.
+                </p>
+             </div>
+             <div className={`p-8 rounded-[2rem] ${COLORS.glass}`}>
+                <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <ShieldAlert className="text-pink-300" /> Segurança de Dados
+                </h4>
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  As nossas videochamadas utilizam protocolo P2P (Peer-to-Peer), o que significa que o sinal vai direto 
+                  de um telemóvel para o outro, sem passar por servidores centrais que possam gravar o conteúdo.
+                </p>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- Preços (Grande e Explícito) --- */}
+      <section className="py-32 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className={`relative p-1 rounded-[3.5rem] bg-gradient-to-br ${COLORS.roseGold}`}>
+            <div className="bg-[#0f0b0d] rounded-[3.4rem] p-12 md:p-20 text-center overflow-hidden">
+               <div className="absolute -top-10 -right-10 opacity-10">
+                 <Crown className="w-60 h-60" />
+               </div>
+               
+               <h3 className="text-pink-300 font-black tracking-widest text-sm uppercase mb-4">Acesso Exclusivo à Comunidade</h3>
+               <h2 className="text-5xl md:text-7xl font-black mb-8">O ACESSO É <br /> VIA WHATSAPP</h2>
+               
+               <p className="text-zinc-400 mb-12 text-lg">
+                 Para manter a qualidade da nossa rede e a verificação manual de cada membro, a contratação é feita diretamente 
+                 com a nossa equipa de suporte VIP através do número abaixo.
+               </p>
+
+               <div className="flex flex-col gap-6">
+                  <button 
+                    onClick={handleWhatsAppRedirect}
+                    className={`w-full py-8 rounded-3xl bg-gradient-to-r ${COLORS.roseGold} text-black font-black text-3xl shadow-2xl shadow-pink-500/20 hover:scale-[1.02] active:scale-95 transition-all`}
+                  >
+                    CONTRATAR AGORA (11) 95467-2380
+                  </button>
+                  <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                    <Zap className="w-3 h-3" /> Resposta em menos de 2 minutos
+                  </p>
+               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- Footer --- */}
+      <footer className="py-20 border-t border-white/5 bg-black text-center px-6">
+        <div className="max-w-7xl mx-auto flex flex-col items-center">
+           <div className="flex items-center gap-3 mb-8">
+            <div className={`p-2 rounded-lg bg-gradient-to-br ${COLORS.roseGold}`}>
+              <Crown className="text-black w-5 h-5" />
+            </div>
+            <span className="text-xl font-black tracking-tighter uppercase">VideoVIP</span>
+          </div>
+          <p className="text-zinc-600 text-xs max-w-lg mb-8 leading-relaxed">
+            Plataforma de entretenimento e conexões de elite. Restrito a maiores de 18 anos. 
+            Todas as transações são encriptadas e discretas. Não toleramos assédio ou práticas ilegais.
+          </p>
+          <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+            <a href="#">Privacidade</a>
+            <a href="#">Segurança</a>
+            <a href="#">Termos VIP</a>
+          </div>
+          <p className="mt-12 text-[9px] text-zinc-800 font-bold uppercase tracking-[0.5em]">
+            © 2024 Luxury Video Network • São Paulo • 11 95467-2380
+          </p>
+        </div>
+      </footer>
+
+      {/* --- Concierge AI Window (Feminina) --- */}
+      {isChatOpen && (
+        <div className="fixed bottom-6 right-6 w-[90vw] md:w-[420px] h-[650px] bg-[#0f0b0d] border border-white/10 rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col z-[200] overflow-hidden animate-in slide-in-from-bottom-10">
+          <div className={`p-8 bg-gradient-to-r ${COLORS.roseGold} text-black flex justify-between items-center`}>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+                <Heart className="w-6 h-6 fill-black" />
+              </div>
+              <div>
+                <h4 className="font-black text-sm uppercase leading-none">VIP Concierge</h4>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="w-1.5 h-1.5 bg-black rounded-full animate-pulse" />
+                  <span className="text-[9px] font-black opacity-70">CONECTADA</span>
+                </div>
+              </div>
+            </div>
+            <button onClick={() => setIsChatOpen(false)} className="hover:bg-black/10 p-2 rounded-full transition-all">
+              <ChevronRight className="rotate-90 w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] p-5 rounded-3xl text-sm leading-relaxed shadow-sm ${
+                  msg.role === 'user' 
+                  ? 'bg-pink-600 text-white font-bold rounded-tr-none' 
+                  : 'bg-zinc-900 text-zinc-200 rounded-tl-none border border-white/5'
+                }`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="flex justify-start italic text-[10px] text-zinc-600 font-black tracking-widest uppercase">
+                A preparar resposta exclusiva...
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          <div className="p-6 bg-black/40 border-t border-white/5 flex gap-3">
+            <input 
+              type="text" 
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder="Fale comigo..."
+              className="flex-1 bg-zinc-900 border-none rounded-2xl px-6 py-4 text-sm focus:ring-1 focus:ring-pink-500 outline-none"
+            />
+            <button onClick={handleSendMessage} className="p-4 bg-pink-600 text-white rounded-2xl hover:bg-pink-500 transition-all">
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="px-6 pb-6 bg-black/40">
+             <button 
+                onClick={handleWhatsAppRedirect}
+                className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase text-pink-300 tracking-widest hover:bg-white/10 transition-all"
+             >
+               Contratação Direta: 11 95467-2380
+             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Trigger */}
+      {!isChatOpen && (
+        <button 
+          onClick={() => setIsChatOpen(true)}
+          className={`fixed bottom-8 right-8 p-6 rounded-full bg-gradient-to-r ${COLORS.roseGold} text-black shadow-2xl hover:scale-110 active:scale-95 transition-all z-50 group`}
+        >
+          <div className="absolute -top-1 -left-1 bg-pink-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full animate-bounce">Apoio</div>
+          <MessageCircle className="w-9 h-9 fill-black" />
+        </button>
+      )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
+    </div>
+  );
+};
+
+export default App;
